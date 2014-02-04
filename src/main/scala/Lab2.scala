@@ -62,7 +62,10 @@ object Lab2 extends jsy.util.JsyApplication {
   def toNumber(v: Expr): Double = {
     require(isValue(v))
     (v: @unchecked) match {
+      case Undefined => Double.NaN
       case N(n) => n
+      case B(b) => if (b) 1 else 0
+      case S(s) => s.toDouble
       case _ => throw new UnsupportedOperationException
     }
   }
@@ -70,7 +73,10 @@ object Lab2 extends jsy.util.JsyApplication {
   def toBoolean(v: Expr): Boolean = {
     require(isValue(v))
     (v: @unchecked) match {
+      case Undefined => false
       case B(b) => b
+      case N(n) => if (n == 0 || n == Double.NaN) false else true
+      case S(s) => if (s.length > 0) true else false
       case _ => throw new UnsupportedOperationException
     }
   }
@@ -78,8 +84,10 @@ object Lab2 extends jsy.util.JsyApplication {
   def toStr(v: Expr): String = {
     require(isValue(v))
     (v: @unchecked) match {
-      case S(s) => s
       case Undefined => "undefined"
+      case B(b) => if (b) "true" else "false"
+      case N(n) => n.toString()
+      case S(s) => s
       case _ => throw new UnsupportedOperationException
     }
   }
@@ -90,6 +98,7 @@ object Lab2 extends jsy.util.JsyApplication {
 
     e match {
       /* Base Cases */
+      
       
       /* Inductive Cases */
       case Print(e1) => println(pretty(eToVal(e1))); Undefined
