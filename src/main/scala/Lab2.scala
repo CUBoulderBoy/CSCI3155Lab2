@@ -119,7 +119,7 @@ object Lab2 extends jsy.util.JsyApplication {
     	  }
     	}
     	
-    	/* Binary Base Cases */
+    	/* Arithmetic Cases */
     	case Binary(Plus, e1, e2) => N(toNumber(e1) + toNumber(e2))
     	case Binary(Minus, e1, e2) => N(toNumber(e1) - toNumber(e2))
     	case Binary(Times, e1, e2) => N(toNumber(e1) * toNumber(e2))
@@ -129,6 +129,28 @@ object Lab2 extends jsy.util.JsyApplication {
     		else N(Double.PositiveInfinity)
     	}
       
+    	/* Comparison Cases */
+    	case Binary(Eq, e1, e2) => e1 match{
+    	  case N(n) => if (toNumber(e2) == n) B(true) else B(false)
+    	  case B(b) => if (toBoolean(e2) == b) B(true) else B(false)
+    	  case S(s) => if (toStr(e2) == s) B(true) else B(false)
+    	}
+    	case Binary(Ne, e1, e2) => e1 match{
+    	  case N(n) => if (toNumber(e2) == n) B(false) else B(true)
+    	  case B(b) => if (toBoolean(e2) == b) B(false) else B(true)
+    	  case S(s) => if (toStr(e2) == s) B(false) else B(true)
+    	}
+    	case Binary(Lt, e1, e2) => e1 match{
+    	  case N(n) => if (toNumber(e2) > n) B(true) else B(false)
+    	  case B(b) => if (toBoolean(e2) > b) B(true) else B(false)
+    	  case S(s) => if (toStr(e2) > s) B(true) else B(false)
+    	}
+    	case Binary(Le, e1, e2) => e1 match{
+    	  case N(n) => if ((toNumber(e2) > n) || (toNumber(e2) == n)) B(true) else B(false)
+    	  case B(b) => if ((toBoolean(e2) > b) || (toBoolean(e2) == b)) B(true) else B(false)
+    	  case S(s) => if ((toStr(e2) > s) || (toStr(e2) == s)) B(true) else B(false)
+    	}
+    	
     	/* Inductive Cases */
     	case Print(e1) => println(pretty(eToVal(e1))); Undefined
 
