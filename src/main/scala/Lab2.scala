@@ -97,13 +97,42 @@ object Lab2 extends jsy.util.JsyApplication {
     def eToVal(e: Expr): Expr = eval(env, e)
 
     e match {
-      /* Base Cases */
+    	/* Base Cases */
+    	case N(n) => N(n)
+    	
+    	/* Unary Cases */
+    	case Unary(Neg, e) => N(- toNumber(e))
+    	
+    	/* AndOr Cases */
+    	case Binary(And, e1, e2) => {
+    	  val a = toBoolean(e1)
+    	  val b = toBoolean(e2)
+    	  if (a && b) e1 else {
+    	    if (!a) e1 else e2
+    	  }
+    	}
+    	case Binary(Or, e1, e2) => {
+    	  val a = toBoolean(e1)
+    	  val b = toBoolean(e2)
+    	  if (a) e1 else {
+    	    if (b) e2 else e1
+    	  }
+    	}
+    	
+    	/* Binary Base Cases */
+    	case Binary(Plus, e1, e2) => N(toNumber(e1) + toNumber(e2))
+    	case Binary(Minus, e1, e2) => N(toNumber(e1) - toNumber(e2))
+    	case Binary(Times, e1, e2) => N(toNumber(e1) * toNumber(e2))
+    	case Binary(Div, en, ed) => {
+    		if (toNumber(ed) > 0) N(toNumber(en) / toNumber(ed))
+    		else if (toNumber(en) < 0) N(Double.NegativeInfinity)
+    		else N(Double.PositiveInfinity)
+    	}
       
-      
-      /* Inductive Cases */
-      case Print(e1) => println(pretty(eToVal(e1))); Undefined
+    	/* Inductive Cases */
+    	case Print(e1) => println(pretty(eToVal(e1))); Undefined
 
-      case _ => throw new UnsupportedOperationException
+    	case _ => throw new UnsupportedOperationException
     }
   }
     
