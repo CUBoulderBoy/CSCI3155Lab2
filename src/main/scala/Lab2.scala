@@ -172,6 +172,11 @@ object Lab2 extends jsy.util.JsyApplication {
       
       case If(e1, e2, e3) => if(toBoolean(eval(env, e1))) eval(env, e2) else eval(env, e3)
       
+      case Binary(seq, e1, e2) => {
+        val _= eval(env, e1)
+        eval(env, e2)
+      }
+      
       /* Inductive Cases */
       case Print(e1) => println(pretty(eToVal(e1))); Undefined
 
