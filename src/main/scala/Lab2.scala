@@ -64,7 +64,7 @@ object Lab2 extends jsy.util.JsyApplication {
     (v: @unchecked) match {
       case Undefined => Double.NaN
       case N(n) => n
-      case B(b) => if (b) 1 else 0
+      case B(b) => if (b) 1.0 else 0.0
       case S(s) => s.toDouble
       case Var(x) => toNumber(get(emp, x))
       case _ => throw new UnsupportedOperationException
@@ -76,7 +76,7 @@ object Lab2 extends jsy.util.JsyApplication {
     (v: @unchecked) match {
       case Undefined => false
       case B(b) => b
-      case N(n) => if (n == 0 || n == Double.NaN) false else true
+      case N(n) => if (n == 0.0 || n == Double.NaN) false else true
       case S(s) => if (s.length > 0) true else false
       case _ => throw new UnsupportedOperationException
     }
@@ -137,42 +137,12 @@ object Lab2 extends jsy.util.JsyApplication {
     	}
       
     	/* Comparison Cases */
-    	case Binary(Eq, e1, e2) => e1 match{
-    	  	case N(n) => if (toNumber(e2) == n) B(true) else B(false)
-    	  	case B(b) => if (toBoolean(e2) == b) B(true) else B(false)
-    	  	case S(s) => if (toStr(e2) == s) B(true) else B(false)
-    	  	case _ => throw new UnsupportedOperationException
-    	}
-    	case Binary(Ne, e1, e2) => e1 match{
-    		case N(n) => if (toNumber(e2) == n) B(false) else B(true)
-    		case B(b) => if (toBoolean(e2) == b) B(false) else B(true)
-    		case S(s) => if (toStr(e2) == s) B(false) else B(true)
-    		case _ => throw new UnsupportedOperationException
-    	}
-    	case Binary(Lt, e1, e2) => e1 match{
-    	  	case N(n) => if (toNumber(e2) > n) B(true) else B(false)
-    	  	case B(b) => if (toBoolean(e2) > b) B(true) else B(false)
-    	  	case S(s) => if (toStr(e2) > s) B(true) else B(false)
-    	  	case _ => throw new UnsupportedOperationException
-    	}
-    	case Binary(Le, e1, e2) => e1 match{
-    	  	case N(n) => if ((toNumber(e2) > n) || (toNumber(e2) == n)) B(true) else B(false)
-    	  	case B(b) => if ((toBoolean(e2) > b) || (toBoolean(e2) == b)) B(true) else B(false)
-    	  	case S(s) => if ((toStr(e2) > s) || (toStr(e2) == s)) B(true) else B(false)
-    	  	case _ => throw new UnsupportedOperationException
-    	}
-    	case Binary(Gt, e1, e2) => e1 match{
-    	  	case N(n) => if (toNumber(e2) < n) B(true) else B(false)
-    	  	case B(b) => if (toBoolean(e2) < b) B(true) else B(false)
-    	  	case S(s) => if (toStr(e2) < s) B(true) else B(false)
-    	  	case _ => throw new UnsupportedOperationException
-    	}
-    	case Binary(Ge, e1, e2) => e1 match{
-    	  	case N(n) => if ((toNumber(e2) < n) || (toNumber(e2) == n)) B(true) else B(false)
-    	  	case B(b) => if ((toBoolean(e2) < b) || (toBoolean(e2) == b)) B(true) else B(false)
-    	  	case S(s) => if ((toStr(e2) < s) || (toStr(e2) == s)) B(true) else B(false)
-    	  	case _ => throw new UnsupportedOperationException
-    	}
+    	case Binary(Eq, e1, e2) => B(toNumber(e1) == toNumber(e2))
+    	case Binary(Ne, e1, e2) => B(toNumber(e1) != toNumber(e2))
+    	case Binary(Lt, e1, e2) => B(toNumber(e1) < toNumber(e2))
+    	case Binary(Le, e1, e2) => B(toNumber(e1) <= toNumber(e2))
+    	case Binary(Gt, e1, e2) => B(toNumber(e1) > toNumber(e2))
+    	case Binary(Ge, e1, e2) => B(toNumber(e1) >= toNumber(e2))
     	case Binary(seq, e1, e2) => {
     		val _= eval(env, e1)
     		eval(env, e2)
