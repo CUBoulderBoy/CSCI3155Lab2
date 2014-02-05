@@ -150,6 +150,16 @@ object Lab2 extends jsy.util.JsyApplication {
     	  case B(b) => if ((toBoolean(e2) > b) || (toBoolean(e2) == b)) B(true) else B(false)
     	  case S(s) => if ((toStr(e2) > s) || (toStr(e2) == s)) B(true) else B(false)
     	}
+    	case Binary(Gt, e1, e2) => e1 match{
+    	  case N(n) => if (toNumber(e2) < n) B(true) else B(false)
+    	  case B(b) => if (toBoolean(e2) < b) B(true) else B(false)
+    	  case S(s) => if (toStr(e2) < s) B(true) else B(false)
+    	}
+    	case Binary(Ge, e1, e2) => e1 match{
+    	  case N(n) => if ((toNumber(e2) < n) || (toNumber(e2) == n)) B(true) else B(false)
+    	  case B(b) => if ((toBoolean(e2) < b) || (toBoolean(e2) == b)) B(true) else B(false)
+    	  case S(s) => if ((toStr(e2) < s) || (toStr(e2) == s)) B(true) else B(false)
+    	}
     	
     	/* Inductive Cases */
     	case Print(e1) => println(pretty(eToVal(e1))); Undefined
