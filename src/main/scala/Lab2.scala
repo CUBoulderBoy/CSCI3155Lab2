@@ -64,8 +64,9 @@ object Lab2 extends jsy.util.JsyApplication {
     (v: @unchecked) match {
       case Undefined => Double.NaN
       case N(n) => n
-      case B(b) => if (b) 1 else 0
-      case S(s) => s.toDouble
+      case B(b) => if (b) 1.0 else 0.0
+      case S(s) => try {s.toDouble } catch {case e: Exception => Double.NaN}
+      case Var(x) => toNumber(get(emp, x))
       case _ => throw new UnsupportedOperationException
     }
   }
@@ -74,9 +75,11 @@ object Lab2 extends jsy.util.JsyApplication {
     require(isValue(v))
     (v: @unchecked) match {
       case Undefined => false
+      case null => false
       case B(b) => b
-      case N(n) => if (n == 0 || n == Double.NaN) false else true
-      case S(s) => if (s.length > 0) true else false
+      case N(n) => if ((n == 0) || (n == Double.NaN)) false else true
+      case S(s) => if (s.isEmpty) false else true
+      case Var(x) => toBoolean(get(emp, x))
       case _ => throw new UnsupportedOperationException
     }
   }
@@ -86,8 +89,9 @@ object Lab2 extends jsy.util.JsyApplication {
     (v: @unchecked) match {
       case Undefined => "undefined"
       case B(b) => if (b) "true" else "false"
-      case N(n) => n.toString()
+      case N(n) => if (n % 1 == 0) n.toInt.toString else n.toString
       case S(s) => s
+      case Var(x) => toStr(get(emp, x))
       case _ => throw new UnsupportedOperationException
     }
   }
@@ -95,81 +99,70 @@ object Lab2 extends jsy.util.JsyApplication {
   def eval(env: Env, e: Expr): Expr = {
     /* Some helper functions for convenience. */
     def eToVal(e: Expr): Expr = eval(env, e)
-
+    
     e match {
+    	/* Base Cases */
+      	case Undefined => Undefined 
+    	case N(n) => N(n)
+    	case B(b) => B(b)
+    	case S(s) => S(s)
+    	
+    	/* Var Passing Cases */
+    	case Binary(b, Var(v1), Var(v2)) => eval(Binary(b, get(env, v1), get(env, v2)))
+    	case Binary(b, Var(v), e2) => eval(Binary(b, get(env, v), e2))
+    	case Binary(b, e1, Var(v)) => eval(Binary(b, e1, get(env, v)))
+    	
+    	/* Unary Cases */
+    	case Unary(Not, e) => B(! toBoolean(e))
+    	case Unary(Neg, e) => N(- toNumber(e))
       
-      /* Base Cases */
-      case N(n) => N(n)
-      case Var(x) => get(env, x)
-      case _ if (isValue(e)) => e
-      case ConstDecl(x, e1, e2) => {
-        val v1 = eval(env, e1)
-        val envx = extend(env, x, v1)
-        eval(envx, e2)
-      }
+    	/* AndOr Cases */
+    	case Binary(And, e1, e2) => {
+    		val a = toBoolean(e1)
+    		val b = toBoolean(e2)
+    		if (a && b) e1 else {
+    			if (!a) e1 else e2
+    		}
+    	}
+    	case Binary(Or, e1, e2) => {
+    		val a = toBoolean(e1)
+    		val b = toBoolean(e2)
+    		if (a) e1 else {
+    			if (b) e2 else e1
+    		}
+    	}
       
-      /* Unary Cases */
-      case Unary(Not, e) => B(! toBoolean(e))
-      case Unary(Neg, e) => N(- toNumber(e))
+    	/* Arithmetic Cases */
+    	case Binary(Plus, e1, e2) => e match {
+    		case Binary(Plus, S(s), e2) => S(s + toStr(e2))
+    		case Binary(Plus, e1, S(s)) => S(toStr(e1) + s)
+    		case _ => N(toNumber(e1) + toNumber(e2))
+    	}
+    	case Binary(Minus, e1, e2) => N(toNumber(e1) - toNumber(e2))
+    	case Binary(Times, e1, e2) => N(toNumber(e1) * toNumber(e2))
+    	case Binary(Div, en, ed) => {
+    		if (toNumber(ed) > 0) N(toNumber(en) / toNumber(ed))
+    		else if (toNumber(en) < 0) N(Double.NegativeInfinity)
+    		else N(Double.PositiveInfinity)
+    	}
       
-      /* AndOr Cases */
-      case Binary(And, e1, e2) => {
-        val a = toBoolean(e1)
-        val b = toBoolean(e2)
-        if (a && b) e1 else {
-          if (!a) e1 else e2
-        }
-      }
-      case Binary(Or, e1, e2) => {
-        val a = toBoolean(e1)
-        val b = toBoolean(e2)
-        if (a) e1 else {
-          if (b) e2 else e1
-        }
-      }
+    	/* Comparison Cases */
+    	case Binary(Eq, e1, e2) => B(toNumber(e1) == toNumber(e2))
+    	case Binary(Ne, e1, e2) => B(toNumber(e1) != toNumber(e2))
+    	case Binary(Lt, e1, e2) => e match {
+    	  	case Binary(Lt, N(n), e2) => B(n < toNumber(e2))
+    	  	case Binary(Lt, e1, N(n)) => B(toNumber(e1) < n)
+    	  	case Binary(Lt, S(s1), S(s2)) => B(s1 < s2)
+    	}
+    	case Binary(Le, e1, e2) => B(toNumber(e1) <= toNumber(e2))
+    	case Binary(Gt, e1, e2) => B(toNumber(e1) > toNumber(e2))
+    	case Binary(Ge, e1, e2) => B(toNumber(e1) >= toNumber(e2))
+    	case Binary(seq, e1, e2) => {
+    		val _= eval(env, e1)
+    		eval(env, e2)
+    	}
       
-      /* Arithmetic Cases */
-      case Binary(Plus, e1, e2) => N(toNumber(e1) + toNumber(e2))
-      case Binary(Minus, e1, e2) => N(toNumber(e1) - toNumber(e2))
-      case Binary(Times, e1, e2) => N(toNumber(e1) * toNumber(e2))
-      case Binary(Div, en, ed) => {
-        if (toNumber(ed) > 0) N(toNumber(en) / toNumber(ed))
-        else if (toNumber(en) < 0) N(Double.NegativeInfinity)
-        else N(Double.PositiveInfinity)
-      }
-      
-      /* Comparison Cases */
-      case Binary(Eq, e1, e2) => e1 match{
-        case N(n) => if (toNumber(e2) == n) B(true) else B(false)
-        case B(b) => if (toBoolean(e2) == b) B(true) else B(false)
-        case S(s) => if (toStr(e2) == s) B(true) else B(false)
-      }
-      case Binary(Ne, e1, e2) => e1 match{
-        case N(n) => if (toNumber(e2) == n) B(false) else B(true)
-        case B(b) => if (toBoolean(e2) == b) B(false) else B(true)
-        case S(s) => if (toStr(e2) == s) B(false) else B(true)
-      }
-      case Binary(Lt, e1, e2) => e1 match{
-        case N(n) => if (toNumber(e2) > n) B(true) else B(false)
-        case B(b) => if (toBoolean(e2) > b) B(true) else B(false)
-        case S(s) => if (toStr(e2) > s) B(true) else B(false)
-      }
-      case Binary(Le, e1, e2) => e1 match{
-        case N(n) => if ((toNumber(e2) > n) || (toNumber(e2) == n)) B(true) else B(false)
-        case B(b) => if ((toBoolean(e2) > b) || (toBoolean(e2) == b)) B(true) else B(false)
-        case S(s) => if ((toStr(e2) > s) || (toStr(e2) == s)) B(true) else B(false)
-      }
-      case Binary(Gt, e1, e2) => e1 match{
-        case N(n) => if (toNumber(e2) < n) B(true) else B(false)
-        case B(b) => if (toBoolean(e2) < b) B(true) else B(false)
-        case S(s) => if (toStr(e2) < s) B(true) else B(false)
-      }
-      case Binary(Ge, e1, e2) => e1 match{
-        case N(n) => if ((toNumber(e2) < n) || (toNumber(e2) == n)) B(true) else B(false)
-        case B(b) => if ((toBoolean(e2) < b) || (toBoolean(e2) == b)) B(true) else B(false)
-        case S(s) => if ((toStr(e2) < s) || (toStr(e2) == s)) B(true) else B(false)
-      }
-      
+<<<<<<< HEAD
       case If(e1, e2, e3) => if(toBoolean(eval(env, e1))) eval(env, e2) else eval(env, e3)
       
       case Binary(seq, e1, e2) => {
@@ -179,13 +172,30 @@ object Lab2 extends jsy.util.JsyApplication {
       
       /* Inductive Cases */
       case Print(e1) => println(pretty(eToVal(e1))); Undefined
+=======
+    	/* If Case */
+    	case If(e1, e2, e3) => {
+    	  if(toBoolean(eval(env, e1))) eval(env, e2) else eval(env, e3)
+    	}
+    	
+    	/* Inductive Cases */
+    	/* Constant Cases */
+    	case ConstDecl(x, e1, e2) => {
+    		eval(extend(env, x, e1), e2)
+    	}
+    	
+    	case Print(e1) => println(pretty(eToVal(e1))); Undefined
+>>>>>>> 626434c029e214e2bfa6217a6e223c84355fcb90
 
-      case _ => throw new UnsupportedOperationException
+    	case _ => throw new UnsupportedOperationException
     }
   }
     
   // Interface to run your interpreter starting from an empty environment.
-  def eval(e: Expr): Expr = eval(emp, e)
+  def eval(e: Expr): Expr = {
+    println("\nExpression:\n  " + e)
+    eval(emp, e)
+  }
 
   // Interface to run your interpreter from a string.  This is convenient
   // for unit testing.
