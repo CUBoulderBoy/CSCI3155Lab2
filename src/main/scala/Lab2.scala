@@ -65,7 +65,7 @@ object Lab2 extends jsy.util.JsyApplication {
       case Undefined => Double.NaN
       case N(n) => n
       case B(b) => if (b) 1.0 else 0.0
-      case S(s) => s.toDouble
+      case S(s) => try {s.toDouble } catch {case e: Exception => Double.NaN}
       case Var(x) => toNumber(get(emp, x))
       case _ => throw new UnsupportedOperationException
     }
@@ -75,9 +75,11 @@ object Lab2 extends jsy.util.JsyApplication {
     require(isValue(v))
     (v: @unchecked) match {
       case Undefined => false
+      case null => false
       case B(b) => b
-      case N(n) => if (n == 0.0 || n == Double.NaN) false else true
-      case S(s) => if (s.length > 0) true else false
+      case N(n) => if ((n == 0) || (n == Double.NaN)) false else true
+      case S(s) => if (s.isEmpty) false else true
+      case Var(x) => toBoolean(get(emp, x))
       case _ => throw new UnsupportedOperationException
     }
   }
@@ -87,8 +89,9 @@ object Lab2 extends jsy.util.JsyApplication {
     (v: @unchecked) match {
       case Undefined => "undefined"
       case B(b) => if (b) "true" else "false"
-      case N(n) => n.toString()
+      case N(n) => if (n % 1 == 0) n.toInt.toString else n.toString
       case S(s) => s
+      case Var(x) => toStr(get(emp, x))
       case _ => throw new UnsupportedOperationException
     }
   }
@@ -99,13 +102,16 @@ object Lab2 extends jsy.util.JsyApplication {
     
     e match {
     	/* Base Cases */
+      	case Undefined => Undefined 
     	case N(n) => N(n)
     	case B(b) => B(b)
     	case S(s) => S(s)
+    	
+    	/* Var Passing Cases */
+    	case Binary(b, Var(v1), Var(v2)) => eval(Binary(b, get(env, v1), get(env, v2)))
     	case Binary(b, Var(v), e2) => eval(Binary(b, get(env, v), e2))
     	case Binary(b, e1, Var(v)) => eval(Binary(b, e1, get(env, v)))
-    	case Binary(b, Var(v1), Var(v2)) => eval(Binary(b, get(env, v1), get(env, v2)))
-      
+    	
     	/* Unary Cases */
     	case Unary(Not, e) => B(! toBoolean(e))
     	case Unary(Neg, e) => N(- toNumber(e))
@@ -127,7 +133,11 @@ object Lab2 extends jsy.util.JsyApplication {
     	}
       
     	/* Arithmetic Cases */
-    	case Binary(Plus, e1, e2) => N(toNumber(e1) + toNumber(e2))
+    	case Binary(Plus, e1, e2) => e match {
+    		case Binary(Plus, S(s), e2) => S(s + toStr(e2))
+    		case Binary(Plus, e1, S(s)) => S(toStr(e1) + s)
+    		case _ => N(toNumber(e1) + toNumber(e2))
+    	}
     	case Binary(Minus, e1, e2) => N(toNumber(e1) - toNumber(e2))
     	case Binary(Times, e1, e2) => N(toNumber(e1) * toNumber(e2))
     	case Binary(Div, en, ed) => {
@@ -139,7 +149,11 @@ object Lab2 extends jsy.util.JsyApplication {
     	/* Comparison Cases */
     	case Binary(Eq, e1, e2) => B(toNumber(e1) == toNumber(e2))
     	case Binary(Ne, e1, e2) => B(toNumber(e1) != toNumber(e2))
-    	case Binary(Lt, e1, e2) => B(toNumber(e1) < toNumber(e2))
+    	case Binary(Lt, e1, e2) => e match {
+    	  	case Binary(Lt, N(n), e2) => B(n < toNumber(e2))
+    	  	case Binary(Lt, e1, N(n)) => B(toNumber(e1) < n)
+    	  	case Binary(Lt, S(s1), S(s2)) => B(s1 < s2)
+    	}
     	case Binary(Le, e1, e2) => B(toNumber(e1) <= toNumber(e2))
     	case Binary(Gt, e1, e2) => B(toNumber(e1) > toNumber(e2))
     	case Binary(Ge, e1, e2) => B(toNumber(e1) >= toNumber(e2))
@@ -166,7 +180,10 @@ object Lab2 extends jsy.util.JsyApplication {
   }
     
   // Interface to run your interpreter starting from an empty environment.
-  def eval(e: Expr): Expr = eval(emp, e)
+  def eval(e: Expr): Expr = {
+    println("\nExpression:\n  " + e)
+    eval(emp, e)
+  }
 
   // Interface to run your interpreter from a string.  This is convenient
   // for unit testing.
